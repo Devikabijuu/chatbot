@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f4f8;
+        }
+        #chat-container {
+            max-width: 500px;
+            margin: auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            height: 600px;
+        }
+        #messages {
+            height: 450px;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #ddd;
+        }
+        .message {
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user {
+            margin-left: auto;
+            background-color: #e1f5fe;
+            color: #0277bd;
+            text-align: right;
+        }
+        .bot {
+            margin-right: auto;
+            background-color: #c8e6c9;
+            color: #388e3c;
+            text-align: left;
+        }
+        #input-container {
+            padding: 10px;
+            background-color: #fff;
+        }
+        #user-input {
+            flex: 1;
+            border-radius: 20px;
+        }
+        #send-btn {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat-container" class="mt-5">
+    <div id="messages"></div>
+    <div id="input-container" class="d-flex">
+        <input type="text" id="user-input" class="form-control" placeholder="Type a message..." autofocus>
+        <button id="send-btn" class="btn btn-success">Send</button>
+    </div>
+</div>
+
+<script>
+    function addMessage(text, className) {
+        const messageDiv = document.createElement("div");
+        messageDiv.classList.add("message", className);
+        messageDiv.textContent = text;
+        document.getElementById("messages").appendChild(messageDiv);
+        document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+        return messageDiv;  // Return the messageDiv for further use
+    }
+
+    function typeWriter(messageDiv, words, index = 0) {
+        if (index < words.length) {
+            messageDiv.textContent += (index === 0 ? '' : ' ') + words[index];
+            index++;
+            setTimeout(() => typeWriter(messageDiv, words, index), 10); // Adjust speed here
+        }
+    }
+
+    document.getElementById("send-btn").addEventListener("click", function() {
+        const userInput = document.getElementById("user-input").value;
+        if (userInput) {
+            const userMessageDiv = addMessage(userInput, "user");
+            document.getElementById("user-input").value = "";
+
+            fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt: userInput })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.response) {
+                    const botMessageDiv = addMessage("", "bot"); // Add an empty message for the bot
+                    const words = data.response.split(" "); // Split the response into words
+                    typeWriter(botMessageDiv, words); // Start typing the response word by word
+                } else {
+                    addMessage("Error: " + data.error, "bot");
+                }
+            });
+        }
+    });
+
+    // Optional: Send message on Enter key press
+    document.getElementById("user-input").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            document.getElementById("send-btn").click();
+        }
+    });
+</script>
+
+</body>
+</html>
